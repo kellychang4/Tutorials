@@ -7,7 +7,7 @@ A collection of tutorials.
 
 # Contents
 
-[Nonlinear Optimization](https://github.com/kellychang4/notebooks/blob/master/demoFit.ipynb)
+[Nonlinear Optimization](https://github.com/kellychang4/Tutorials/blob/master/Fit/demoFit.ipynb)
 
 --- 
 
