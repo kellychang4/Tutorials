@@ -7,6 +7,12 @@ class optFit:
         self.func = func # function handle
         self.params = params # initialize dictionary
         self.freeList = freeList # initialize list
+        
+    def __repr__(self):
+        return("<optFit func:%s params:%s freeList:%s>" % (self.func, self.params, self.freeList))
+        
+    def __str__(self):
+        return("\tfunc: %s\n\tparams: %s\n\tfreeList: %s" % (self.func.__name__, self.params, self.freeList))
 
     def catch(self, func, val=False, handle=lambda e: e, *args, **kwargs):
         try:
