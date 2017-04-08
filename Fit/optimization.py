@@ -1,84 +1,105 @@
-import re
 import numpy as np
 import scipy.optimize as opt
 
-class optFit:
-    def __init__(self, func=[], params={}, freeList=[]):
+class fit:
+    def __init__(self, func=[], params={}, freeList={}, mask={}):
         self.func = func # function handle
-        self.params = params # initialize dictionary
-        self.freeList = freeList # initialize list
+        self.params = params # initialize params dictionary
+        self.freeList = freeList # initialize freeList dictionary 
+        self.mask = mask # initialize mask dictionary
         
     def __repr__(self):
-        return("<optFit func:%s params:%s freeList:%s>" % (self.func, self.params, self.freeList))
+        return("<class fit func: %s params: %s freeList: %s mask: %s>" % 
+               (self.func, self.params, self.freeList, self.mask))
         
     def __str__(self):
-        return("\tfunc: %s\n\tparams: %s\n\tfreeList: %s" % (self.func.__name__, self.params, self.freeList))
+        return("\n\tfunc: %s\n\n\tparams: %s\n\n\tfreeList: %s\n\n\tmask: %s" % 
+               (self.func.__name__, self.params, self.freeList, self.mask))
 
-    def catch(self, func, val=False, handle=lambda e: e, *args, **kwargs):
+    def editcon(self, params, freeList):
         try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            return val
+            unconList = {i: [np.tile(-np.inf, np.shape(params[i])), np.tile(np.inf, np.shape(params[i]))] 
+                             for i in freeList.keys() if (freeList[i] is 'None')} 
+            scaleList = {i: [np.array(freeList[i][0]),np.array(freeList[i][1])] for i in freeList.keys() 
+                         if ((freeList[i] is not 'None') and (np.isscalar(params[i])))}
+            fixScaleList = {i: [np.tile(freeList[i][0], np.shape(params[i])), np.tile(freeList[i][1], 
+                            np.shape(params[i]))] for i in freeList.keys() if ((freeList[i] is not 'None') 
+                            and (not np.isscalar(params[i])) and (np.shape(freeList[i]) == (2,)))}
 
-    def params2vals(self, params, freeList):
-        return([params[i] for i in freeList])
+            editList = {**freeList, **{**scaleList, **fixScaleList, **unconList}}
+            params = {**params, **{i: np.array(params[i]) for i in params.keys() if not
+                                   isinstance(params[i], np.ndarray)}}
+
+            if not all([np.shape(editList[i]) == ((2,) + np.shape(params[i])) for i in editList.keys()]):
+                raise ValueError('Must specify lower and upper bound arrays of equivalent shape as '
+                                 'parameters values for free parameter(s): %s' % 
+                                 [i for i in editList.keys() if not (np.shape(editList[i]) == 
+                                  ((2,) + np.shape(params[i])))])
+                
+            return(params, editList)
+        except ValueError as e:
+            raise e
+            
+    def fixcon(self, freeList, mask):
+        try:
+            mask = {i: np.array(mask[i], dtype=bool) for i in mask.keys()}
+            if not all([np.shape(mask[i]) == (np.shape(freeList[i][0])) for i in mask.keys()]):
+                raise ValueError('Must specify mask array of equivalent shape as parameters values for ' 
+                                 'free parameter(s): %s' % [i for i in mask.keys() if not 
+                                  (np.shape(mask[i]) == np.shape(freeList[i][0]))])
+            for key in mask.keys():
+                freeList[key][0][mask[key]] = np.nan
+                freeList[key][1][mask[key]] = np.nan
+            return(freeList)        
+        except ValueError as e:
+            raise e
+
+    def bndcon(self, params, freeList):
+        p = {i: params[i].flatten() for i in freeList.keys()}
+        f = {i: [freeList[i][0].flatten(), freeList[i][1].flatten()] for i in freeList.keys()}
+        m = {i: np.mean(f[i], axis=0) for i in f.keys()}
+        return({x: np.reshape(np.array([f[x][0][i] if (np.isposinf(m[x][i]) and (p[x][i] < f[x][0][i]))
+                  else f[x][1][i] if (np.isneginf(m[x][i]) and (p[x][i] > f[x][1][i]))
+                  else p[x][i] if np.isnan(m[x][i]) else m[x][i] for i in np.arange(np.size(m[x]))]),
+                  np.shape(params[x])) for x in f.keys()})
+
+    def params2vals(self, params, freeList, mask):
+        [params,freeList] = self.editcon(params, freeList)
+        freeList = self.fixcon(freeList, mask)
+        params = self.bndcon(params, freeList)
+        vals = np.array([x for i in freeList.keys() for x,y in zip(params[i].flatten(), 
+                         freeList[i][0].flatten()) if not np.isnan(y)])
+        return(vals, params, freeList) 
 
     def vals2params(self, vals, params, freeList):
-        return({**params, **{i: j for i,j in zip(freeList,vals)}})
+        nVals = [np.sum(~np.isnan(freeList[i][0])) for i in freeList.keys()] 
+        vals = {z: vals[np.arange(x,y)] for x,y,z in zip(np.cumsum(nVals)-
+                    nVals,np.cumsum(nVals),freeList.keys())}
+        indx = [np.argwhere(np.isnan(freeList[j][0].flatten())).flatten() for j in vals.keys()]
+        fixed = {j: params[j].flatten()[i] for i,j in zip(indx,vals.keys())}
+        updates = {j: np.insert(vals[j],i-np.arange(0,np.size(i)),fixed[j]).reshape(np.shape(params[j]))
+                  for i,j in zip(indx, vals.keys())}
+        return({**params, **updates})
 
-    def fitFunction(self, vals, func, params, freeList):
+    def nancon(self, params, freeList):
+        indx = ~np.isnan(freeList[0])
+        return(any(~np.logical_and(params[indx] >= freeList[0][indx],
+                                  params[indx] <= freeList[1][indx])))
+
+    def fitFunction(self, vals, func, params, freeList): 
         params = self.vals2params(vals, params, freeList)
-        return(func(**params))
-
-    def fitnon(self, func, params, freeList):
-        vals = self.params2vals(params, freeList)
-        vals = opt.fmin(func=self.fitFunction, x0=vals, args=(func, params, freeList), 
-                        maxfun=1e6, full_output=True, )
-        params = self.vals2params(vals[0], params, freeList)
-        return(params, vals[1])
-
-    def params2valscon(self, params, freeList):
-        freeList = [re.sub('[= ]','',i) for i in freeList] # remove blanks and '='
-        tmp = [re.compile('(<|>)').split(i) for i in freeList]
-        lb = [self.catch(lambda: float(y), float('-inf')) for y in [float('-inf') if len(x)==1 
-              else x[0] if x[1]=="<" else x[2] if (len(x)==3 and x[1]==">") else x[4] 
-              if (len(x)==5 and x[3]==">") else float('-inf') for x in tmp]] # lower bound
-        ub = [self.catch(lambda: float(y), float('inf')) for y in [float('inf') if len(x)==1 
-              else x[0] if x[1]==">" else x[2] if (len(x)==3 and x[1]=="<") 
-              else x[4] if (len(x)==5 and x[3]=="<") else float('inf') for x in tmp]] # upper bound
-        indx = [[isinstance(self.catch(lambda: float(re.sub('[<>]','42',y)),True),bool) 
-                 for y in x] for x in tmp]
-        varList = [i[j] for i,j in zip(tmp, [int(y[0]) for y in [np.where(x) for x in indx]])]
-        vals = [params[i] for i in varList] # values
-        return(vals, {x: [y,z] for x,y,z in zip(varList,lb,ub)}, varList)
-
-    def bndcon(self, vals, bounds, freeList):
-        indx = [x > bounds[y][0] and x < bounds[y][1] for x,y in zip(vals,freeList)]
-        tmp = [bounds[y] if not x else float('nan') for x,y in zip(indx,freeList)]
-        tmp = [min(x) if (np.isinf(np.mean(x)) and np.mean(x) > 0)
-               else max(x) if (np.isinf(np.mean(x)) and np.mean(x) < 0) 
-               else np.mean(x) for x in tmp]
-        return([y if np.isnan(x) else x for x,y in zip(tmp,vals)])
-
-    def fitFunctionCon(self, vals, func, params, bounds, freeList): 
-        params = self.vals2params(vals, params, freeList)
-        err = func(**params) + sum([0 if params[i] >= bounds[i][0] and params[i] <= bounds[i][1] 
-                                    else float('inf') for i in freeList])
+        err = func(**params) + np.sum([np.inf if self.nancon(params[i],freeList[i])
+                                       else 0 for i in freeList.keys()])
         return(err)
 
-    def fitcon(self, func, params, freeList):
-        [vals,bounds,varList] = self.params2valscon(params, freeList)
-        vals = self.bndcon(vals, bounds, varList)
-        vals = opt.fmin(func=self.fitFunctionCon, x0=vals, args=(func, params, bounds, varList),
-                        maxfun=1e6, full_output=True)
-        params = self.vals2params(vals[0], params, varList)
-        return(params, vals[1])
+    def fitcon(self, func, params, freeList, mask):
+        [vals,params,freeList] = self.params2vals(params, freeList, mask)
+        out = opt.fmin(func=self.fitFunction, x0=vals, args=(func, params, freeList),
+                       maxfun=1e6, full_output=True)
+        params = self.vals2params(out[0], params, freeList)
+        return(params, out[1])
 
-    def fit(self, func=None, params=None, freeList=None):
-        args = {**self.__dict__, **{i: j for i,j in 
-                zip(self.fit.__code__.co_varnames,[self,func,params,freeList])}}
-        args = {i: self.__dict__[i] if args[i]==None else args[i] for i in self.__dict__}
-        if any([re.search('[<>]',i)!=None for i in args['freeList']]):
-            return(self.fitcon(**args))
-        else:
-            return(self.fitnon(**args))
+    def fit(self, func=[], params={}, freeList={}, mask={}):
+        args = {'func': func, 'params': params, 'freeList': freeList, 'mask': mask}
+        args = {i: self.__dict__[i] if not args[i] else args[i] for i in args.keys()} 
+        return(self.fitcon(**args))
