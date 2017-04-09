@@ -66,7 +66,7 @@ class fit:
     def params2vals(self, params, freeList, mask):
         [params,freeList] = self.editcon(params, freeList)
         freeList = self.fixcon(freeList, mask)
-        params = self.bndcon(params, freeList)
+        params = {**params, **self.bndcon(params, freeList)}
         vals = np.array([x for i in freeList.keys() for x,y in zip(params[i].flatten(), 
                          freeList[i][0].flatten()) if not np.isnan(y)])
         return(vals, params, freeList) 
