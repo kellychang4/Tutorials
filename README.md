@@ -7,7 +7,10 @@ A collection of tutorials.
 
 # Contents
 
-[Nonlinear Optimization](https://github.com/kellychang4/Tutorials/blob/master/Fit/demoFit.ipynb)
+* Fit
+
+- [Model Fitting Tutorial](https://github.com/kellychang4/Tutorials/blob/master/Fit/Model-Fitting-Tutorial.ipynb)
+- [Rosenbrock Fitting Demo](https://github.com/kellychang4/Tutorials/blob/master/Fit/Rosenbrock-Fit-Demo.ipynb)
 
 --- 
 
