@@ -7,8 +7,7 @@ A collection of tutorials.
 
 # Contents
 
-* Fit
-
+##  Fit
 - [Model Fitting Tutorial](https://github.com/kellychang4/Tutorials/blob/master/Fit/Model-Fitting-Tutorial.ipynb)
 - [Rosenbrock Fitting Demo](https://github.com/kellychang4/Tutorials/blob/master/Fit/Rosenbrock-Fit-Demo.ipynb)
 
