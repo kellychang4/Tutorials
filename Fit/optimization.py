@@ -19,11 +19,11 @@ class fit:
     def editcon(self, params, freeList):
         try:
             unconList = {i: [np.tile(-np.inf, np.shape(params[i])), np.tile(np.inf, np.shape(params[i]))] 
-                             for i in freeList.keys() if (freeList[i] is 'None')} 
+                             for i in freeList.keys() if (freeList[i] is None)} 
             scaleList = {i: [np.array(freeList[i][0]),np.array(freeList[i][1])] for i in freeList.keys() 
-                         if ((freeList[i] is not 'None') and (np.isscalar(params[i])))}
+                         if ((freeList[i] is not None) and (np.isscalar(params[i])))}
             fixScaleList = {i: [np.tile(freeList[i][0], np.shape(params[i])), np.tile(freeList[i][1], 
-                            np.shape(params[i]))] for i in freeList.keys() if ((freeList[i] is not 'None') 
+                            np.shape(params[i]))] for i in freeList.keys() if ((freeList[i] is not None) 
                             and (not np.isscalar(params[i])) and (np.shape(freeList[i]) == (2,)))}
 
             editList = {**freeList, **{**scaleList, **fixScaleList, **unconList}}
