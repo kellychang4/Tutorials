@@ -1,0 +1,338 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>demoAudioCalibrationProcess</title><meta name="generator" content="MATLAB 8.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2017-04-19"><meta name="DC.source" content="demoAudioCalibrationProcess.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Audio System Calibration</a></li><li><a href="#3">Impulse Response Function (IRF)</a></li><li><a href="#6">Frequency Response Function (FRF)</a></li><li><a href="#10">Equalization (EQ) Filter</a></li></ul></div><pre class="codeinput"><span class="comment">% demoAudioCalibrationProcess.m</span>
+
+clear <span class="string">all</span>; close <span class="string">all</span>;
+</pre><h2>Audio System Calibration<a name="2"></a></h2><p>The objective, as with any type of calibration, is to reproduce the input signal with (ideally) no distortions that may occur due to the method of delivery.</p><p>In the auditory system, these distortions can come from a variety of sources. The distortions that this demonstration walks through are from headphones of an audio system setup.</p><p>Please keep in mind that distortions will vary from headphones made from different manufactures due to the materials used during manufacturing as well as the possible addition components in the headphones. Distortions will even vary from left to right headphones to varying degrees. All important to keep in mind.</p><h2>Impulse Response Function (IRF)<a name="3"></a></h2><p>An impulse response function is the response of a dynamic system in time to a brief input, called an impulse. In the case of audio system calibrations, the impulse is usually 1 volt delivered into the headphones at 1 kHZ.</p><p>This is either done with oscilloscope (if you have one) or the impulse response function (and possibly other information) will be provided by the manufactures of the headphones.</p><p>I've provided an example file that contains all of the information that will be walked through in this demo, but let us assume that all we know right now is the impulse response function for each headphone, left and right, and the sampling rate that the impulse response function was collected at.</p><pre class="codeinput">load(<span class="string">'Example_Audio_Calibration.mat'</span>); <span class="comment">% audioInfo</span>
+
+fsLeft = audioInfo.left.fs;
+irfLeft = audioInfo.left.irf;
+
+fsRight = audioInfo.right.fs;
+irfRight = audioInfo.right.irf;
+</pre><p>We can vizualize the impulse response functions for each headphone as a function of time.</p><pre class="codeinput">tLeft = ((0:(length(irfLeft)-1)))/fsLeft;
+tRight = ((0:(length(irfRight)-1)))/fsRight;
+
+h = figure(1); clf;
+h.Position = [215 269 874 420];
+subplot(1,2,1);
+plot(tLeft, irfLeft);
+xlabel(<span class="string">'Time (s)'</span>);
+ylabel(<span class="string">'Response'</span>);
+title(<span class="string">'LEFT: Impulse Response Function'</span>);
+set(gca, <span class="string">'XLim'</span>, [0 max(tLeft)], <span class="string">'YLim'</span>, [-0.4 0.4]);
+
+subplot(1,2,2);
+plot(tRight, irfRight);
+xlabel(<span class="string">'Time (s)'</span>);
+ylabel(<span class="string">'Response'</span>);
+title(<span class="string">'RIGHT: Impulse Response Function'</span>);
+set(gca, <span class="string">'XLim'</span>, [0 max(tRight)], <span class="string">'YLim'</span>, [-0.4 0.4]);
+</pre><img vspace="5" hspace="5" src="demoAudioCalibrationProcess_01.png" style="width:874px;height:420px;" alt=""> <h2>Frequency Response Function (FRF)<a name="6"></a></h2><p>The frequency response function "...is the quantitative measure of the output spectrum of a system...in response to a stimulus, and is used to characterize the dynamics of the system." <a href="https://en.wikipedia.org/wiki/Frequency_response">[1]</a></p><p>In other words, the frequency response function is a Fourier transform of the impulse response function. The impulse response function ("in response to a stimulus") in the frequency domain is the "spectrum" the definition from Wikipiedia was referring to.</p><p>Thinking back to what we know about the Fourier transform, we know that we can decompose any signal into its frequency components expressed in a complex conjugate (as given from MATLAB's fft()).</p><p>We might also be reminded fo the Nyquist Limit. This is upper limit of frequency component representation that can be acheived from a Fourier tranform. The Nyquist Limit is always half the sampling rate.</p><pre class="codeinput">fLeft = linspace(0, audioInfo.left.fs/2, length(audioInfo.left.irf)/2+1);
+fRight = linspace(0, audioInfo.right.fs/2, length(audioInfo.right.irf)/2+1);
+</pre><p>Back to the decomposition of the signal into complex conjugates. Complex conjugate values are just values that have a real and imaginary values. The real values contain the amplitude (or magnitude) information at each frequency component. The imaginary values contain the phase information at each frequency component.</p><p>For our purposes, we are only interested in the real values that come out of the Fourier transform. This can be done with the abs() on the output of fft() in MATLAB. The output is then scaled by 2 times the number of samples from the input signal. This accounts for the redundancy in the fft() transformation.</p><pre class="codeinput">ampL = 2 * abs(fft(audioInfo.left.irf)) / length(audioInfo.left.irf);
+ampL = ampL(1:length(fLeft));
+
+ampR = 2 * abs(fft(audioInfo.right.irf)) / length(audioInfo.right.irf);
+ampR = ampR(1:length(fRight));
+</pre><p>After the Fourier transform, we are now in the frequency domain. We can visualized the amplitudes in Pascals of each frequency component in the impulse response function as a function of frequency in Hz.</p><pre class="codeinput">h = figure(2); clf;
+h.Position = [215 269 874 420];
+subplot(1,2,1);
+plot(fLeft, ampL);
+xlabel(<span class="string">'Frequency (Hz)'</span>);
+ylabel(<span class="string">'Amplitude (Pa)'</span>);
+title(<span class="string">'LEFT: Frequency Response Function'</span>);
+set(gca, <span class="string">'XLim'</span>, [0 max(fLeft)], <span class="string">'YLim'</span>, [0 0.004]);
+
+subplot(1,2,2);
+plot(fRight, ampR);
+xlabel(<span class="string">'Frequency (Hz)'</span>);
+ylabel(<span class="string">'Amplitude (Pa)'</span>);
+title(<span class="string">'RIGHT: Frequency Response Function'</span>);
+set(gca, <span class="string">'XLim'</span>, [0 max(fRight)], <span class="string">'YLim'</span>, [0 0.004]);
+</pre><img vspace="5" hspace="5" src="demoAudioCalibrationProcess_02.png" style="width:874px;height:420px;" alt=""> <h2>Equalization (EQ) Filter<a name="10"></a></h2><p>Equalization filters are filters that "boost" or "weaken" the signal at specific frequency ranges to produce a "equalized" output. EQ filters basically plot relative "boosts" or "weakening" of sound pressure level as a function of frequency.</p><p>Since we already have the frequency response function, which is a meausre of amplitude as a function of frequency, it is easy enough to convert the amplitudes in Pascals (Pa) from the frequency into relative sound pressure levels in decibels (dB SPL). The formula for this conversion is:</p><p><img src="demoAudioCalibrationProcess_eq08675516662578391046.png" alt="$$SPL\;(dB) = 20\,log_{10}\left(\frac{p}{p_{o}}\right)$$" style="width:128px;height:27px;"></p><p>Where <img src="demoAudioCalibrationProcess_eq09941021013676836398.png" alt="$p$" style="width:6px;height:8px;"> is the amplitude you want to convert and <img src="demoAudioCalibrationProcess_eq07621974148467414149.png" alt="$p_{o}$" style="width:10px;height:8px;"> is the reference sound pressure. Air, <img src="demoAudioCalibrationProcess_eq00544854108632037575.png" alt="$20\:\mu Pa$" style="width:34px;height:11px;">, is commonly used as the reference sound pressure.</p><p>To convert our frequency response functions for the left and right headphones all we need to do is transform each amplitude into sound pressure level with the formula above.</p><pre class="codeinput">splL = 20*log10(ampL);
+splR = 20*log10(ampR);
+</pre><p>Note that I'm not including the reference sound pressure level. This is because the desired output is the relative sound pressure levels as a function of freqencies. Including the reference sound pressure value would only scale the output and does not impact the relationship between sound pressure levels and frequencies.</p><p>Lastly, we plot the relative sound pressure levels as a function of frequencies for each headphone.</p><pre class="codeinput">h = figure(3); clf;
+h.Position = [215 269 874 420];
+subplot(1,2,1);
+plot(fLeft, splL);
+xlabel(<span class="string">'Frequency (Hz)'</span>);
+ylabel(<span class="string">'Relative Sound Pressure Level (dB SPL)'</span>);
+title(<span class="string">'LEFT: EQ Filter'</span>);
+set(gca, <span class="string">'XLim'</span>, [0 max(fLeft)]);
+
+subplot(1,2,2);
+plot(fRight, splR);
+xlabel(<span class="string">'Frequency (Hz)'</span>);
+ylabel(<span class="string">'Relative Sound Pressure Level (dB SPL)'</span>);
+title(<span class="string">'RIGHT: EQ Filter'</span>);
+set(gca, <span class="string">'XLim'</span>, [0 max(fRight)]);
+</pre><img vspace="5" hspace="5" src="demoAudioCalibrationProcess_03.png" style="width:874px;height:420px;" alt=""> <p>While we only have a finite sample of the relative sound pressure levels as given by the half the frequency sampling rate of the original impulse response function (thank you, Fourier transforms!), it is easy enough to interpolate sound pressure levels for other frequencies using spline().</p><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+% demoAudioCalibrationProcess.m
+
+clear all; close all;
+
+%% Audio System Calibration
+%
+% The objective, as with any type of calibration, is to reproduce the input
+% signal with (ideally) no distortions that may occur due to the method of
+% delivery.
+%
+% In the auditory system, these distortions can come from a variety of
+% sources. The distortions that this demonstration walks through are from
+% headphones of an audio system setup.
+%
+% Please keep in mind that distortions will vary from headphones made from
+% different manufactures due to the materials used during manufacturing as
+% well as the possible addition components in the headphones. Distortions
+% will even vary from left to right headphones to varying degrees. All
+% important to keep in mind.
+
+%% Impulse Response Function (IRF)
+%
+% An impulse response function is the response of a dynamic system in time
+% to a brief input, called an impulse. In the case of audio system
+% calibrations, the impulse is usually 1 volt delivered into the
+% headphones at 1 kHZ.
+%
+% This is either done with oscilloscope (if you have one) or the impulse
+% response function (and possibly other information) will be provided by
+% the manufactures of the headphones.
+
+%%
+%
+% I've provided an example file that contains all of the information that
+% will be walked through in this demo, but let us assume that all we know
+% right now is the impulse response function for each headphone, left and
+% right, and the sampling rate that the impulse response function was
+% collected at.
+
+load('Example_Audio_Calibration.mat'); % audioInfo
+
+fsLeft = audioInfo.left.fs;
+irfLeft = audioInfo.left.irf;
+
+fsRight = audioInfo.right.fs;
+irfRight = audioInfo.right.irf;
+
+%%
+%
+% We can vizualize the impulse response functions for each headphone as a
+% function of time.
+
+tLeft = ((0:(length(irfLeft)-1)))/fsLeft;
+tRight = ((0:(length(irfRight)-1)))/fsRight;
+
+h = figure(1); clf;
+h.Position = [215 269 874 420];
+subplot(1,2,1);
+plot(tLeft, irfLeft);
+xlabel('Time (s)');
+ylabel('Response');
+title('LEFT: Impulse Response Function');
+set(gca, 'XLim', [0 max(tLeft)], 'YLim', [-0.4 0.4]);
+
+subplot(1,2,2);
+plot(tRight, irfRight);
+xlabel('Time (s)');
+ylabel('Response');
+title('RIGHT: Impulse Response Function');
+set(gca, 'XLim', [0 max(tRight)], 'YLim', [-0.4 0.4]);
+
+%% Frequency Response Function (FRF)
+%
+% The frequency response function "...is the quantitative measure of the
+% output spectrum of a system...in response to a stimulus, and is
+% used to characterize the dynamics of the system." <https://en.wikipedia.org/wiki/Frequency_response [1]>
+%
+% In other words, the frequency response function is a Fourier transform of
+% the impulse response function. The impulse response function
+% ("in response to a stimulus") in the frequency domain is the "spectrum"
+% the definition from Wikipiedia was referring to.
+
+%%
+%
+% Thinking back to what we know about the Fourier transform, we know that
+% we can decompose any signal into its frequency components expressed in a
+% complex conjugate (as given from MATLAB's fft()).
+%
+% We might also be reminded fo the Nyquist Limit. This is upper limit of
+% frequency component representation that can be acheived from a Fourier
+% tranform. The Nyquist Limit is always half the sampling rate.
+
+fLeft = linspace(0, audioInfo.left.fs/2, length(audioInfo.left.irf)/2+1);
+fRight = linspace(0, audioInfo.right.fs/2, length(audioInfo.right.irf)/2+1);
+
+%%
+%
+% Back to the decomposition of the signal into complex conjugates. Complex
+% conjugate values are just values that have a real and imaginary values.
+% The real values contain the amplitude (or magnitude) information at each
+% frequency component. The imaginary values contain the phase information
+% at each frequency component.
+%
+% For our purposes, we are only interested in the real values that come out
+% of the Fourier transform. This can be done with the abs() on the output
+% of fft() in MATLAB. The output is then scaled by 2 times the number of
+% samples from the input signal. This accounts for the redundancy in the
+% fft() transformation.
+
+ampL = 2 * abs(fft(audioInfo.left.irf)) / length(audioInfo.left.irf);
+ampL = ampL(1:length(fLeft));
+
+ampR = 2 * abs(fft(audioInfo.right.irf)) / length(audioInfo.right.irf);
+ampR = ampR(1:length(fRight));
+
+%%
+%
+% After the Fourier transform, we are now in the frequency domain. We can
+% visualized the amplitudes in Pascals of each frequency component in the
+% impulse response function as a function of frequency in Hz.
+
+h = figure(2); clf;
+h.Position = [215 269 874 420];
+subplot(1,2,1);
+plot(fLeft, ampL);
+xlabel('Frequency (Hz)');
+ylabel('Amplitude (Pa)');
+title('LEFT: Frequency Response Function');
+set(gca, 'XLim', [0 max(fLeft)], 'YLim', [0 0.004]);
+
+subplot(1,2,2);
+plot(fRight, ampR);
+xlabel('Frequency (Hz)');
+ylabel('Amplitude (Pa)');
+title('RIGHT: Frequency Response Function');
+set(gca, 'XLim', [0 max(fRight)], 'YLim', [0 0.004]);
+
+%% Equalization (EQ) Filter
+%
+% Equalization filters are filters that "boost" or "weaken" the signal at
+% specific frequency ranges to produce a "equalized" output. EQ filters
+% basically plot relative "boosts" or "weakening" of sound pressure level
+% as a function of frequency.
+%
+% Since we already have the frequency response function, which is a meausre
+% of amplitude as a function of frequency, it is easy enough to convert the
+% amplitudes in Pascals (Pa) from the frequency into relative sound pressure
+% levels in decibels (dB SPL). The formula for this conversion is:
+%
+% $$SPL\;(dB) = 20\,log_{10}\left(\frac{p}{p_{o}}\right)$$
+%
+% Where $p$ is the amplitude you want to convert and $p_{o}$ is the
+% reference sound pressure. Air, $20\:\mu Pa$, is commonly used as the
+% reference sound pressure.
+
+%%
+%
+% To convert our frequency response functions for the left and right
+% headphones all we need to do is transform each amplitude into sound
+% pressure level with the formula above.
+
+splL = 20*log10(ampL);
+splR = 20*log10(ampR);
+
+%%
+%
+% Note that I'm not including the reference sound pressure level. This is
+% because the desired output is the relative sound pressure levels as a
+% function of freqencies. Including the reference sound pressure value
+% would only scale the output and does not impact the relationship between
+% sound pressure levels and frequencies.
+
+%%
+%
+% Lastly, we plot the relative sound pressure levels as a function of
+% frequencies for each headphone.
+
+h = figure(3); clf;
+h.Position = [215 269 874 420];
+subplot(1,2,1);
+plot(fLeft, splL);
+xlabel('Frequency (Hz)');
+ylabel('Relative Sound Pressure Level (dB SPL)');
+title('LEFT: EQ Filter');
+set(gca, 'XLim', [0 max(fLeft)]);
+
+subplot(1,2,2);
+plot(fRight, splR);
+xlabel('Frequency (Hz)');
+ylabel('Relative Sound Pressure Level (dB SPL)');
+title('RIGHT: EQ Filter');
+set(gca, 'XLim', [0 max(fRight)]);
+
+%%
+%
+% While we only have a finite sample of the relative sound pressure levels
+% as given by the half the frequency sampling rate of the original impulse
+% response function (thank you, Fourier transforms!), it is easy enough to
+% interpolate sound pressure levels for other frequencies using spline().
+##### SOURCE END #####
+--></body></html>
